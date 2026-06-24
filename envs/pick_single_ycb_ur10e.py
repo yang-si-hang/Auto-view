@@ -60,9 +60,17 @@ class LargeXYTableSceneBuilder(TableSceneBuilder):      # enlarge the table
         self.scene_objects: list[sapien.Entity] = [self.table, self.ground]
 
 
-@register_env("PickSingleYCBUR10e-v1", max_episode_steps=100)
+@register_env("PickSingleYCBUR10e-v1", max_episode_steps=300)
 class PickSingleYCBUR10eEnv(PickSingleYCBEnv):
     SUPPORTED_ROBOTS = ["ur10e_robotiq_2f85"]
+    CAMERA_WIDTH = 640
+    CAMERA_HEIGHT = 480
+    CAMERA_INTRINSIC = np.array([
+        [461.49, 0.0, 322.39],
+        [0.0, 461.65, 241.174],
+        [0.0, 0.0, 1.0]],
+        dtype=np.float32,
+    )
 
     def __init__(
         self,
@@ -80,30 +88,38 @@ class PickSingleYCBUR10eEnv(PickSingleYCBEnv):
 
     @property
     def _default_sensor_configs(self):
-        width, height = 640, 480
-        intrinsic = np.array([
-            [461.49, 0.0, 322.39],
-            [0.0, 461.65, 241.174],
-            [0.0, 0.0, 1.0]],
-            dtype=np.float32,
-        )
-
-        # Camera extrinsic: world-frame camera pose.
-        pose = sapien_utils.look_at(
-            eye=[0.35, -0.45, 0.55],
-            target=[-0.05, 0.35, 0.12],
-        )
+        pose = self._default_camera_pose()
         return [
             CameraConfig(
                 uid="base_camera",
                 pose=pose,
-                width=width,
-                height=height,
-                intrinsic=intrinsic,
+                width=self.CAMERA_WIDTH,
+                height=self.CAMERA_HEIGHT,
+                intrinsic=self.CAMERA_INTRINSIC,
                 near=0.01,
                 far=100,
             )
         ]
+
+    @property
+    def _default_human_render_camera_configs(self):
+        pose = self._default_camera_pose()
+        return CameraConfig(
+            uid="render_camera",
+            pose=pose,
+            width=self.CAMERA_WIDTH,
+            height=self.CAMERA_HEIGHT,
+            intrinsic=self.CAMERA_INTRINSIC,
+            near=0.01,
+            far=100,
+        )
+
+    def _default_camera_pose(self):
+        # Camera extrinsic: world-frame camera pose.
+        return sapien_utils.look_at(
+            eye=[0.35, 0.45, 0.4],
+            target=[-0.05, 0.45, 0.1],
+        )
 
     def _load_scene(self, options: dict):
         self.table_scene = LargeXYTableSceneBuilder(
@@ -151,9 +167,6 @@ class PickSingleYCBUR10eEnv(PickSingleYCBEnv):
         )
 
     def _set_base_camera_look_at_obj(self, obj_pos: torch.Tensor):
-        if not hasattr(self, "_sensors") or "base_camera" not in self._sensors:
-            return
-
         obj_pos = common.to_tensor(obj_pos, device=self.device)
         if obj_pos.ndim == 1:
             obj_pos = obj_pos[None, :]

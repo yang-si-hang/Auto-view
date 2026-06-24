@@ -32,7 +32,7 @@ URDF_PATH = (
 @register_agent(asset_download_ids=["ur10e", "robotiq_2f"])
 class UR10eRobotiq2F85(BaseAgent):
     uid = "ur10e_robotiq_2f85"
-    mjcf_path = str(ASSET_PATH)
+    # mjcf_path = str(ASSET_PATH)
     urdf_path = str(URDF_PATH)
     disable_self_collisions = True
 
@@ -121,18 +121,18 @@ class UR10eRobotiq2F85(BaseAgent):
             force_limit=330,
             ee_link=self.tcp_link_name,
             urdf_path=self.urdf_path,
-            frame="root_translation:root_aligned_body_rotation"     # root trans, body rot
+            frame="root_translation:body_aligned_body_rotation"     # root trans, body rot
         )
 
         gripper_pd_joint_pos = PDJointPosMimicControllerConfig(
-            self.active_gripper_joint_names,
-            lower=None,
-            upper=None,
+            self.active_gripper_joint_names,        # define the gripper action joint
+            lower=0.0,
+            upper=0.81,
             stiffness=1e5,
             damping=1e3,
             force_limit=100,
             friction=0.05,
-            normalize_action=False,
+            normalize_action=True,
             mimic={
                 "left_outer_knuckle_joint": {
                     "joint": "right_outer_knuckle_joint",
@@ -142,7 +142,7 @@ class UR10eRobotiq2F85(BaseAgent):
             },
         )
         gripper_pd_joint_delta_pos = deepcopy(gripper_pd_joint_pos)
-        gripper_pd_joint_delta_pos.lower = -0.15
+        gripper_pd_joint_delta_pos.lower = -0.15        # define the range of gripper delta position
         gripper_pd_joint_delta_pos.upper = 0.15
         gripper_pd_joint_delta_pos.normalize_action = True
         gripper_pd_joint_delta_pos.use_delta = True
@@ -167,12 +167,12 @@ class UR10eRobotiq2F85(BaseAgent):
                 ),
                 pd_ee_delta_pos=dict(
                     arm=arm_pd_ee_delta_pos,
-                    gripper_active=gripper_pd_joint_delta_pos,
+                    gripper_active=gripper_pd_joint_pos,
                     gripper_passive=passive_gripper_joints,
                 ),
                 pd_ee_delta_pose=dict(
                     arm=arm_pd_ee_delta_pose,
-                    gripper_active=gripper_pd_joint_delta_pos,
+                    gripper_active=gripper_pd_joint_pos,
                     gripper_passive=passive_gripper_joints,
                 ),
             )
