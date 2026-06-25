@@ -20,7 +20,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import envs.pick_single_ycb_ur10e
+import envs.pick_single_ycb_xarm6_robotiq, envs.pick_single_ycb_ur10e
 from utils.const import DATA_PATH
 
 
@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument("--trajectory-name", default="trajectory")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num-envs", type=int, default=1)
-    parser.add_argument("--num-steps", type=int, default=200)
+    parser.add_argument("--num-steps", type=int, default=150)
     parser.add_argument("--save-video", default=True, action=argparse.BooleanOptionalAction)
     parser.add_argument("--move-camera", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--waypoint-spacing", type=float, default=0.02)
@@ -70,11 +70,11 @@ def build_waypoints(env):
                 dim=1,
             ),
             torch.cat(
-                [xy, torch.full((n, 1), 0.09, dtype=torch.float32, device=device)],
+                [xy, torch.full((n, 1), 0.08, dtype=torch.float32, device=device)],
                 dim=1,
             ),
             torch.cat(
-                [xy, torch.full((n, 1), 0.09, dtype=torch.float32, device=device)],
+                [xy, torch.full((n, 1), 0.08, dtype=torch.float32, device=device)],
                 dim=1,
             ),
             goal_pos.to(dtype=torch.float32),
@@ -205,7 +205,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     env = gym.make(
-        "PickSingleYCBUR10e-v1",
+        "PickSingleYCBUR10e-v1",  # "PickSingleYCBUR10e-v1", PickSingleYCBXArm6Robotiq-v1
         obs_mode="rgb",
         control_mode="pd_ee_delta_pose",
         render_mode="rgb_array",
@@ -270,7 +270,7 @@ def main():
             target_gripper = waypoints["gripper"][env_ids, waypoint_idx]
             action, dist = waypoint_action(env, target_pos, target_quat, target_gripper)
 
-        print(f"step {step} =====: \naction={action}, dist={dist}")
+        print(f"step {step} =====: \naction={action}")
         obs, reward, terminated, truncated, info = env.step(action)
         if bool(torch.as_tensor(terminated, device=device).any()):
             break

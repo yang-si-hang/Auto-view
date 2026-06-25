@@ -35,6 +35,19 @@ class UR10eRobotiq2F85(BaseAgent):
     # mjcf_path = str(ASSET_PATH)
     urdf_path = str(URDF_PATH)
     disable_self_collisions = True
+    urdf_config = dict(
+        _materials=dict(
+            gripper=dict(static_friction=2.0, dynamic_friction=2.0, restitution=0.0)
+        ),
+        link=dict(
+            left_inner_finger_pad=dict(
+                material="gripper", patch_radius=0.1, min_patch_radius=0.1
+            ),
+            right_inner_finger_pad=dict(
+                material="gripper", patch_radius=0.1, min_patch_radius=0.1
+            ),
+        ),
+    )
 
     arm_joint_names = [
         "shoulder_pan_joint",
@@ -129,9 +142,9 @@ class UR10eRobotiq2F85(BaseAgent):
             lower=0.0,
             upper=0.81,
             stiffness=1e5,
-            damping=1e3,
-            force_limit=100,
-            friction=0.05,
+            damping=2000,
+            force_limit=0.1,
+            friction=1,
             normalize_action=True,
             mimic={
                 "left_outer_knuckle_joint": {
@@ -208,6 +221,24 @@ class UR10eRobotiq2F85(BaseAgent):
         left_drive.set_limit_y(0, 0)
         left_drive.set_limit_z(0, 0)
 
+        gripper_links = [
+            "right_inner_knuckle",
+            "right_outer_knuckle",
+            "left_inner_knuckle",
+            "left_outer_knuckle",
+            "right_inner_finger_pad",
+            "left_inner_finger_pad",
+            "right_outer_finger",
+            "left_outer_finger",
+            "robotiq_arg2f_base_link",
+            "right_inner_finger",
+            "left_inner_finger",
+            "wrist_3_link",
+        ]
+        for link_name in gripper_links:
+            link = self.robot.links_map[link_name]
+            link.set_collision_group_bit(group=2, bit_idx=31, bit=1)
+
     def _after_init(self):
         self.tcp = sapien_utils.get_obj_by_name(
             self.robot.get_links(), self.tcp_link_name
@@ -226,7 +257,7 @@ class UR10eRobotiq2F85(BaseAgent):
         right_force = torch.linalg.norm(right_forces, axis=1)
 
         left_dir = self.finger1_link.pose.to_transformation_matrix()[..., :3, 1]
-        right_dir = -self.finger2_link.pose.to_transformation_matrix()[..., :3, 1]
+        right_dir = self.finger2_link.pose.to_transformation_matrix()[..., :3, 1]
         left_angle = common.compute_angle_between(left_dir, left_forces)
         right_angle = common.compute_angle_between(right_dir, right_forces)
         left_flag = torch.logical_and(

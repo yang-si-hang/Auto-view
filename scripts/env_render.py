@@ -10,12 +10,12 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import envs.pick_single_ycb_ur10e
+import envs.pick_single_ycb_ur10e, envs.pick_single_ycb_xarm6_robotiq
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env-name", type=str, default="PickSingleYCBUR10e-v1")
+    parser.add_argument("--env-name", type=str, default="PickSingleYCBXArm6Robotiq-v1")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--control-mode", type=str, default="pd_ee_delta_pose")
     return parser.parse_args()
